@@ -1,6 +1,7 @@
 require 'pry'
-Class Scrapr
-    def Initialize
+require 'nokogiri'
+class Scrapr
+    def initialize
         @base_url = "https://www.metacritic.com"
     end
 
@@ -11,6 +12,7 @@ Class Scrapr
 
         #Now that we have the initial scrap we need to asign the various
         #parts of the HTML source.
+        #all work done on this method in november 2021
         should_buy.each do |should_buy|
             title = should_buy.css('h3').text
             score = should_buy.css('.metascore_anchor')[0].text.strip.chomp
@@ -21,23 +23,25 @@ Class Scrapr
 
             rating = Rating.new(score, title)
 
-            game = Game.new(rank_position, title, score, came_out?, about, more_info)
+            game = Game.new(rank_position, title, score, came_out, about, more_info)
 
         end
     end
+
+        #this method was completed March of 2022 after a long medical break and alot of studying independently
 
     def follow_up_scan(more_info)
         game_raw = open(@base_url + more_info, 'User-Agent' => 'Edg/96.0.1054.43')
         game_raw_segmented = Nokogiri::HTML(game_raw)
 
-        the_details_potenz =  game_raw_segmented.css('summary_details').text
-
-        developer = game_raw_segmented.css('summary_detail developer')[0][1].text
-        binding.pry
-        #first_genres = game_raw_segmented.css
-        #online? = game_raw_segmented.css
-        #buy_now = game_raw_segmented.css
-
-        #where_to_buy = game_raw_segmented.css
+        #details and summary
+        the_details_potenz =  game_raw_segmented.css('span.blurb.blurb_collapsed').text.strip.chomp
+        developer = game_raw_segmented.css('li.summary_detail.developer')[1][0].text
+        first_genres = game_raw_segmented.css('li.summary_detail.product_genre')[1].text
+        online? = game_raw_segmented.css('li.summary_detail.product-players')[1].text
+        esrb = game_raw_segmented.css('li.summary_detail.product_rating')[1].text
+        where_to_buy = game_raw_segmented.css('a.esite_url')
+        return [details: the_details_potenz, developer: developer, genre: first_genres, online: online?, esrb: esrb, purchase: where_to_buy]
     end
+
 end
